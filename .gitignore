@@ -1,0 +1,4 @@
+node_modules/
+database/db.db3
+state_updates
+.env
