@@ -7,7 +7,7 @@ module.exports = async (pathDatabase) => {
     sqlite3.verbose();
 
     const db = await open({
-        filename: pathDatabase || pathResolve(process.cwd(), './database/db.db3'),
+        filename: pathDatabase || pathResolve(__dirname, './database/db.db3'),
         driver: sqlite3.Database,
     });
 

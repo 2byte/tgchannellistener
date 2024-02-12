@@ -48,7 +48,7 @@ module.exports = class TgChannelManager {
         status,
         tracking_end_date,
         track_type,
-        track_type_lastmessage_quantity,
+        track_type_lastmessage_quantity = 0,
         is_new = 1,
         last_message_id = 0,
     }) {

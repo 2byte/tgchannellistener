@@ -5,8 +5,16 @@ const path = require('path');
 const TgChannelManager = require('./src/TgChannelManager');
 const { config } = require('dotenv');
 const express = require('express');
+const yargs = require('yargs');
 
-const resultLoadEnv = config();
+const argv = yargs(process.argv.slice(2)).option('runWorker', {
+    alias: 's',
+    type: 'boolean',
+    default: true,
+    describe: 'Start the worker',
+});
+
+const resultLoadEnv = config({path: path.join(__dirname, '.env')});
 
 if (resultLoadEnv.error) {
     throw new Error(resultLoadEnv.error);
@@ -23,7 +31,7 @@ dbConnection()
         const router = express.Router();
 
         router
-            .post('add', async (req, res) => {
+            .post('/add', async (req, res) => {
                 const data = req.body;
                 const insertedChannel = await tgChannelManager.add(data);
                 res.status(200).send({
@@ -31,7 +39,7 @@ dbConnection()
                     id: insertedChannel.lastID,
                 });
             })
-            .post('{id}/delete', async (req, res) => {
+            .post('/:id/delete', async (req, res) => {
                 const channelId = req.params.id;
 
                 if (await tgChannelManager.delete(channelId)) {
@@ -40,7 +48,7 @@ dbConnection()
 
                 res.status(500).send({ success: false });
             })
-            .post('{id}/update', async (req, res) => {
+            .post('/:id/update', async (req, res) => {
                 const channelId = req.params.id;
                 const data = req.body;
 
@@ -50,13 +58,13 @@ dbConnection()
 
                 return res.status(500).send({ success: false });
             })
-            .get('{id}', async (req, res) => {
+            .get('/:id', async (req, res) => {
                 const channelId = req.params.id;
                 const channel = await tgChannelManager.get(channelId);
-                res.status(200).send({ success: true, data: channel });
+                res.status(200).send({ success: true, data: channel.attributes });
             });
 
-        app.use('channel', router);
+        app.use('/channel', router);
 
         app.listen(process.env.SERVER_API_PORT, () => {
             console.log(
@@ -87,13 +95,15 @@ dbConnection()
             .urlNotifyNewMessage(process.env.API_URL_NOTIFY_NEWMESSAGE)
             .make();
 
-        tgWorker.run({
-            cbEachChannel: (channel, messages) => {
-                console.log(
-                    `channel: ${channel.name} new messages ${messages.length}`
-                );
-            },
-        });
+        if (argv.runWorker) {
+            tgWorker.run({
+                cbEachChannel: (channel, messages) => {
+                    console.log(
+                        `channel: ${channel.name} new messages ${messages.length}`
+                    );
+                },
+            });
+        }
     })
     .catch((err) => {
         throw new Error(err);
